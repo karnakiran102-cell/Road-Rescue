@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RoadRescue — Login Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ─── RESET & BASE ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --amber: #F5A623;
+      --amber-dark: #C47D08;
+      --orange: #F56414;
+      --orange-dark: #C04A06;
+      --red-sos: #E53935;
+      --dark-bg: #0B0D10;
+      --dark-surface: #13161B;
+      --dark-card: #1A1E25;
+      --dark-border: rgba(255,255,255,0.07);
+      --dark-muted: rgba(255,255,255,0.38);
+      --light-bg: #F7F6F3;
+      --light-surface: #FFFFFF;
+      --light-border: #E8E6E1;
+      --light-muted: #888580;
+      --green-online: #22C55E;
+      --font-display: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font-body);
+      background: var(--dark-bg);
+      overflow-x: hidden;
+    }
+
+    /* ─── PAGE LAYOUT ─── */
+    .page {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ─── TOGGLE TAB (top center) ─── */
+    .role-toggle {
+      position: fixed;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      background: rgba(11,13,16,0.88);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50px;
+      padding: 4px;
+      backdrop-filter: blur(12px);
+      gap: 2px;
+    }
+
+    .toggle-btn {
+      padding: 8px 22px;
+      border-radius: 50px;
+      border: none;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      color: rgba(255,255,255,0.45);
+      background: transparent;
+      letter-spacing: 0.02em;
+    }
+
+    .toggle-btn.active-user {
+      background: var(--amber);
+      color: #0B0D10;
+    }
+
+    .toggle-btn.active-mech {
+      background: var(--orange);
+      color: #fff;
+    }
+
+    /* ─── LEFT HERO PANEL ─── */
+    .hero-panel {
+      width: 52%;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 3rem 3.5rem;
+      transition: background var(--transition);
+    }
+
+    .hero-panel.user-theme {
+      background: linear-gradient(155deg, #0d1520 0%, #0B0D10 55%, #0f1a0e 100%);
+    }
+
+    .hero-panel.mech-theme {
+      background: linear-gradient(155deg, #1a0d05 0%, #0B0D10 55%, #120a00 100%);
+    }
+
+    /* Decorative circles */
+    .hero-panel::before {
+      content: '';
+      position: absolute;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      top: -150px; right: -150px;
+      transition: background var(--transition);
+      pointer-events: none;
+    }
+
+    .hero-panel.user-theme::before {
+      background: radial-gradient(circle, rgba(245,166,35,0.12) 0%, transparent 65%);
+    }
+
+    .hero-panel.mech-theme::before {
+      background: radial-gradient(circle, rgba(245,100,20,0.14) 0%, transparent 65%);
+    }
+
+    .hero-panel::after {
+      content: '';
+      position: absolute;
+      width: 350px; height: 350px;
+      border-radius: 50%;
+      bottom: -80px; left: -80px;
+      pointer-events: none;
+      transition: background var(--transition);
+    }
+
+    .hero-panel.user-theme::after {
+      background: radial-gradient(circle, rgba(34,197,94,0.06) 0%, transparent 65%);
+    }
+
+    .hero-panel.mech-theme::after {
+      background: radial-gradient(circle, rgba(245,100,20,0.08) 0%, transparent 65%);
+    }
+
+    /* Grid pattern */
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+    }
+
+    /* Brand */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .brand-logo {
+      width: 42px; height: 42px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      transition: background var(--transition);
+    }
+
+    .user-theme .brand-logo { background: var(--amber); }
+    .mech-theme .brand-logo { background: var(--orange); }
+
+    .brand-text { line-height: 1; }
+
+    .brand-name {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 18px;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-name span { transition: color var(--transition); }
+    .user-theme .brand-name span { color: var(--amber); }
+    .mech-theme .brand-name span { color: var(--orange); }
+
+    .brand-tagline {
+      font-size: 10.5px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-top: 3px;
+    }
+
+    /* Hero content */
+    .hero-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 50px;
+      padding: 6px 15px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      transition: background var(--transition), border-color var(--transition), color var(--transition);
+    }
+
+    .user-theme .hero-badge {
+      background: rgba(245,166,35,0.12);
+      border: 1px solid rgba(245,166,35,0.28);
+      color: var(--amber);
+    }
+
+    .mech-theme .hero-badge {
+      background: rgba(245,100,20,0.12);
+      border: 1px solid rgba(245,100,20,0.3);
+      color: var(--orange);
+    }
+
+    .pulse-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    .user-theme .pulse-dot { background: var(--amber); }
+    .mech-theme .pulse-dot { background: var(--orange); }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.3; transform: scale(0.6); }
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(36px, 4.5vw, 58px);
+      color: #fff;
+      line-height: 1.04;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.2rem;
+    }
+
+    .hero-title .hl { transition: color var(--transition); }
+    .user-theme .hero-title .hl { color: var(--amber); }
+    .mech-theme .hero-title .hl { color: var(--orange); }
+
+    .hero-desc {
+      font-size: 15px;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.45);
+      max-width: 380px;
+      margin-bottom: 2.5rem;
+    }
+
+    /* Stats */
+    .stats-row {
+      display: flex;
+      gap: 2.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-val {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 26px;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-key {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: rgba(255,255,255,0.32);
+      margin-top: 3px;
+    }
+
+    /* Feature pills */
+    .feature-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.55);
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .pill-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      transition: background var(--transition);
+    }
+
+    .user-theme .pill-dot { background: var(--amber); }
+    .mech-theme .pill-dot { background: var(--orange); }
+
+    /* Hero footer trust bar */
+    .trust-bar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .avatars {
+      display: flex;
+    }
+
+    .av {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 2px solid #0B0D10;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff;
+      margin-right: -9px;
+    }
+
+    .trust-text {
+      margin-left: 16px;
+      font-size: 12.5px;
+      color: rgba(255,255,255,0.38);
+    }
+
+    .trust-text b { color: rgba(255,255,255,0.65); font-weight: 600; }
+
+    /* ─── RIGHT FORM PANEL ─── */
+    .form-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 2.5rem 3rem;
+      position: relative;
+      transition: background var(--transition);
+    }
+
+    .form-panel.user-form { background: #fff; }
+    .form-panel.mech-form { background: var(--dark-surface); }
+
+    .form-scroll {
+      max-width: 400px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Form header */
+    .form-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      transition: color var(--transition);
+    }
+
+    .user-form .form-eyebrow { color: var(--amber-dark); }
+    .mech-form .form-eyebrow { color: var(--orange); }
+
+    .form-title {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      margin-bottom: 5px;
+      transition: color var(--transition);
+    }
+
+    .user-form .form-title { color: #0B0D10; }
+    .mech-form .form-title { color: #fff; }
+
+    .form-subtitle {
+      font-size: 14px;
+      margin-bottom: 2rem;
+      transition: color var(--transition);
+    }
+
+    .user-form .form-subtitle { color: #888; }
+    .mech-form .form-subtitle { color: var(--dark-muted); }
+
+    /* Status bar (mechanic only) */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1.4rem;
+      background: rgba(34,197,94,0.06);
+      border: 1px solid rgba(34,197,94,0.18);
+    }
+
+    .status-bar-label { font-size: 12px; color: var(--dark-muted); }
+
+    .status-online {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--green-online);
+    }
+
+    .online-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green-online);
+      animation: blink 2s infinite;
+    }
+
+    /* Fields */
+    .field-group { margin-bottom: 1.1rem; }
+
+    .field-label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+      transition: color var(--transition);
+    }
+
+    .user-form .field-label { color: #555; }
+    .mech-form .field-label { color: rgba(255,255,255,0.45); }
+
+    .field-wrap {
+      position: relative;
+    }
+
+    .field-icon {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px; height: 16px;
+      pointer-events: none;
+      transition: color var(--transition);
+    }
+
+    .user-form .field-icon { color: #C0BDB8; }
+    .mech-form .field-icon { color: rgba(255,255,255,0.25); }
+
+    .field-input {
+      width: 100%;
+      height: 46px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 0 44px 0 42px;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+
+    .user-form .field-input {
+      border: 1.5px solid #E8E5E0;
+      background: #FAFAF8;
+      color: #0B0D10;
+    }
+
+    .user-form .field-input::placeholder { color: #C5C2BC; }
+
+    .user-form .field-input:focus {
+      border-color: var(--amber);
+      box-shadow: 0 0 0 3px rgba(245,166,35,0.13);
+      background: #fff;
+    }
+
+    .mech-form .field-input {
+      border: 1.5px solid rgba(255,255,255,0.09);
+      background: var(--dark-card);
+      color: #fff;
+    }
+
+    .mech-form .field-input::placeholder { color: rgba(255,255,255,0.2); }
+
+    .mech-form .field-input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(245,100,20,0.13);
+    }
+
+    /* Eye toggle */
+    .eye-btn {
+      position: absolute;
+      right: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: none;
+      background: none;
+      cursor: pointer;
+      width: 18px; height: 18px;
+      padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: color var(--transition);
+    }
+
+    .user-form .eye-btn { color: #C0BDB8; }
+    .user-form .eye-btn:hover { color: var(--amber-dark); }
+    .mech-form .eye-btn { color: rgba(255,255,255,0.25); }
+    .mech-form .eye-btn:hover { color: var(--orange); }
+
+    /* Remember / forgot row */
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .check-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: color var(--transition);
+    }
+
+    .user-form .check-label { color: #666; }
+    .mech-form .check-label { color: var(--dark-muted); }
+
+    .check-label input[type="checkbox"] {
+      width: 15px; height: 15px;
+      accent-color: var(--amber);
+      cursor: pointer;
+    }
+
+    .link-btn {
+      font-size: 13px;
+      font-family: var(--font-body);
+      text-decoration: none;
+      transition: color var(--transition);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .user-form .link-btn { color: #999; }
+    .user-form .link-btn:hover { color: var(--amber-dark); }
+    .mech-form .link-btn { color: rgba(255,255,255,0.3); }
+    .mech-form .link-btn:hover { color: var(--orange); }
+
+    /* Primary CTA */
+    .cta-btn {
+      width: 100%;
+      height: 50px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: transform var(--transition), filter var(--transition), box-shadow var(--transition);
+      margin-bottom: 1.2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background 0.15s;
+    }
+
+    .cta-btn:hover::after { background: rgba(255,255,255,0.08); }
+    .cta-btn:hover { transform: translateY(-1px); }
+    .cta-btn:active { transform: translateY(0); filter: brightness(0.96); }
+
+    .user-cta {
+      background: var(--amber);
+      color: #0B0D10;
+      box-shadow: 0 6px 22px rgba(245,166,35,0.28);
+    }
+
+    .user-cta:hover { box-shadow: 0 8px 28px rgba(245,166,35,0.38); }
+
+    .mech-cta {
+      background: var(--orange);
+      color: #fff;
+      box-shadow: 0 6px 22px rgba(245,100,20,0.28);
+    }
+
+    .mech-cta:hover { box-shadow: 0 8px 28px rgba(245,100,20,0.38); }
+
+    /* Divider */
+    .or-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.1rem;
+    }
+
+    .or-line { flex: 1; height: 1px; }
+    .user-form .or-line { background: #EDEAE6; }
+    .mech-form .or-line { background: rgba(255,255,255,0.07); }
+
+    .or-text {
+      font-size: 11.5px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .user-form .or-text { color: #C5C2BC; }
+    .mech-form .or-text { color: rgba(255,255,255,0.25); }
+
+    /* Secondary buttons */
+    .sec-btn {
+      width: 100%;
+      height: 46px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition);
+      margin-bottom: 1rem;
+    }
+
+    .sos-btn {
+      background: rgba(229,57,53,0.06);
+      border: 1.5px solid rgba(229,57,53,0.22);
+      color: #E53935;
+    }
+
+    .sos-btn:hover {
+      background: rgba(229,57,53,0.11);
+      border-color: rgba(229,57,53,0.4);
+    }
+
+    .apply-btn {
+      background: rgba(245,100,20,0.07);
+      border: 1.5px solid rgba(245,100,20,0.22);
+      color: var(--orange);
+    }
+
+    .apply-btn:hover {
+      background: rgba(245,100,20,0.13);
+      border-color: rgba(245,100,20,0.4);
+    }
+
+    /* Footer */
+    .form-footer {
+      text-align: center;
+      font-size: 13px;
+      margin-bottom: 1.8rem;
+    }
+
+    .user-form .form-footer { color: #999; }
+    .mech-form .form-footer { color: var(--dark-muted); }
+
+    .form-footer a {
+      font-weight: 600;
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    .user-form .form-footer a { color: var(--amber-dark); }
+    .mech-form .form-footer a { color: var(--orange); }
+
+    /* Feature badges */
+    .feature-row {
+      display: flex;
+      gap: 8px;
+      padding-top: 1.4rem;
+    }
+
+    .user-form .feature-row { border-top: 1px solid #EDEAE6; }
+    .mech-form .feature-row { border-top: 1px solid rgba(255,255,255,0.06); }
+
+    .feat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 7px;
+    }
+
+    .feat-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .feat-name {
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      line-height: 1.3;
+    }
+
+    .user-form .feat-name { color: #666; }
+    .mech-form .feat-name { color: rgba(255,255,255,0.35); }
+
+    /* ─── ROLE CONTENT VISIBILITY ─── */
+    .user-content, .mech-content { display: none; }
+    .show-user .user-content { display: block; }
+    .show-mech .mech-content { display: block; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      .page { flex-direction: column; }
+      .hero-panel { width: 100%; padding: 2rem 1.8rem; min-height: auto; }
+      .hero-title { font-size: 36px; }
+      .stats-row { gap: 1.5rem; }
+      .role-toggle { top: 12px; }
+      .form-panel { padding: 2rem 1.8rem; }
+      .form-scroll { max-width: 100%; }
+      .feature-pills { display: none; }
+    }
+
+    @media (max-width: 500px) {
+      .hero-panel { padding: 1.5rem; }
+      .form-panel { padding: 1.5rem; }
+      .hero-title { font-size: 30px; }
+      .stats-row { gap: 1.2rem; }
+      .stat-val { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ROLE TOGGLE -->
+<div class="role-toggle" id="roleToggle">
+  <button class="toggle-btn active-user" id="btnUser" onclick="switchRole('user')">
+    🚗 Driver Login
+  </button>
+  <button class="toggle-btn" id="btnMech" onclick="switchRole('mech')">
+    🔧 Mechanic Login
+  </button>
+</div>
+
+<div class="page">
+
+  <!-- ══════════════ HERO PANEL ══════════════ -->
+  <div class="hero-panel user-theme" id="heroPanel">
+    <div class="hero-grid"></div>
+
+    <!-- Brand -->
+    <div class="brand">
+      <div class="brand-logo" id="brandLogo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B0D10" stroke-width="2.2">
+          <path d="M3 17h18M5 17l2-6h10l2 6"/>
+          <circle cx="7.5" cy="19.5" r="2"/>
+          <circle cx="16.5" cy="19.5" r="2"/>
+          <path d="M9 11l.8-2.5h4.4L15 11"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="brand-name">ROAD<span id="brandSpan">RESCUE</span></div>
+        <div class="brand-tagline">Breakdown Assistance Network</div>
+      </div>
+    </div>
+
+    <!-- Hero content switches based on role -->
+    <div class="hero-content">
+
+      <!-- USER HERO -->
+      <div id="heroUser">
+        <div class="hero-badge">
+          <div class="pulse-dot"></div>
+          24 / 7 Live Support
+        </div>
+        <h1 class="hero-title">
+          Stuck on<br>the <span class="hl">road?</span><br>We're here.
+        </h1>
+        <p class="hero-desc">
+          Instant roadside assistance at your fingertips. One tap and our nearest verified technician is on the way.
+        </p>
+        <div class="stats-row">
+          <div>
+            <div class="stat-val">28 min</div>
+            <div class="stat-key">Avg. Response</div>
+          </div>
+          <div>
+            <div class="stat-val">98.4%</div>
+            <div class="stat-key">Resolution</div>
+          </div>
+          <div>
+            <div class="stat-val">340k+</div>
+            <div class="stat-key">Members</div>
+          </div>
+        </div>
+        <div class="feature-pills">
+          <div class="pill"><span class="pill-dot"></span> Live GPS Tracking</div>
+          <div class="pill"><span class="pill-dot"></span> Nearest Garage</div>
+          <div class="pill"><span class="pill-dot"></span> Towing Service</div>
+          <div class="pill"><span class="pill-dot"></span> Battery Jumpstart</div>
+          <div class="pill"><span class="pill-dot"></span> Flat Tyre Fix</div>
+        </div>
+      </div>
+
+      <!-- MECHANIC HERO -->
+      <div id="heroMech" style="display:none">
+        <div class="hero-badge">
+          <div class="pulse-dot"></div>
+          4,200+ Active Techs
+        </div>
+        <h1 class="hero-title">
+          Ready to<br><span class="hl">earn more</span><br>today?
+        </h1>
+        <p class="hero-desc">
+          Log in to your technician dashboard. Accept jobs nearby, track your earnings in real time, and manage your schedule.
+        </p>
+        <div class="stats-row">
+          <div>
+            <div class="stat-val">₹850</div>
+            <div class="stat-key">Avg. Job Pay</div>
+          </div>
+          <div>
+            <div class="stat-val">12+</div>
+            <div class="stat-key">Jobs / Week</div>
+          </div>
+          <div>
+            <div class="stat-val">4.8★</div>
+            <div class="stat-key">Avg. Rating</div>
+          </div>
+        </div>
+        <div class="feature-pills">
+          <div class="pill"><span class="pill-dot"></span> Live Job Dispatch</div>
+          <div class="pill"><span class="pill-dot"></span> Earnings Tracker</div>
+          <div class="pill"><span class="pill-dot"></span> Shift Planner</div>
+          <div class="pill"><span class="pill-dot"></span> Customer Reviews</div>
+          <div class="pill"><span class="pill-dot"></span> Route Optimizer</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Trust bar -->
+    <div class="trust-bar">
+      <div class="avatars">
+        <div class="av" style="background:#3B6D11">A</div>
+        <div class="av" style="background:#185FA5">K</div>
+        <div class="av" style="background:#993556">M</div>
+        <div class="av" style="background:#3C3489">R</div>
+        <div class="av" style="background:#854F0B">S</div>
+      </div>
+      <div class="trust-text" id="trustText">
+        Trusted by <b>340,000+</b> drivers across India
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ FORM PANEL ══════════════ -->
+  <div class="form-panel user-form" id="formPanel">
+    <div class="form-scroll">
+
+      <!-- ── USER FORM ── -->
+      <div id="userForm">
+        <div class="form-eyebrow">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+          Driver Portal
+        </div>
+        <h2 class="form-title">Welcome back</h2>
+        <p class="form-subtitle">Sign in to access your roadside coverage</p>
+
+        <div class="field-group">
+          <label class="field-label">Email or Phone Number</label>
+          <div class="field-wrap">
+            <svg class="field-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="1" y="3" width="14" height="10" rx="2"/>
+              <path d="M1 5l7 5 7-5"/>
+            </svg>
+            <input class="field-input" type="text" placeholder="you@email.com or 9876543210" autocomplete="username" />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <div class="field-wrap">
+            <svg class="field-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="3" y="7" width="10" height="8" rx="1.5"/>
+              <path d="M5 7V5a3 3 0 016 0v2"/>
+            </svg>
+            <input class="field-input" type="password" id="userPass" placeholder="Enter your password" autocomplete="current-password" />
+            <button class="eye-btn" type="button" onclick="togglePass('userPass', this)" aria-label="Toggle password">
+              <svg id="eyeUser" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/>
+                <circle cx="8" cy="8" r="2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <label class="check-label">
+            <input type="checkbox" /> Keep me signed in
+          </label>
+          <button class="link-btn">Forgot password?</button>
+        </div>
+
+        <button class="cta-btn user-cta">Sign In as Driver →</button>
+
+        <div class="or-row">
+          <div class="or-line"></div>
+          <span class="or-text">or</span>
+          <div class="or-line"></div>
+        </div>
+
+        <button class="sec-btn sos-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+            <circle cx="8" cy="8" r="7"/>
+            <path d="M8 5v3.5M8 11v.5" stroke-linecap="round"/>
+          </svg>
+          Emergency SOS — No login required
+        </button>
+
+        <p class="form-footer">New to RapidRescue? <a href="#">Create a free account</a></p>
+
+        <div class="feature-row">
+          <div class="feat">
+            <div class="feat-icon" style="background:rgba(245,166,35,0.1)">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#F5A623" stroke-width="1.6">
+                <circle cx="9" cy="8" r="3"/><path d="M9 1v2M9 13v2M1 8h2M13 8h2"/>
+              </svg>
+            </div>
+            <div class="feat-name">GPS Tracking</div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon" style="background:rgba(24,95,165,0.1)">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#185FA5" stroke-width="1.6">
+                <path d="M9 16s-7-4.5-7-9a7 7 0 0114 0c0 4.5-7 9-7 9z"/><circle cx="9" cy="7" r="2"/>
+              </svg>
+            </div>
+            <div class="feat-name">Find Garage</div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon" style="background:rgba(34,197,94,0.1)">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#22C55E" stroke-width="1.6">
+                <path d="M3 9l4 4 8-8"/>
+              </svg>
+            </div>
+            <div class="feat-name">Instant Coverage</div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon" style="background:rgba(229,57,53,0.08)">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#E53935" stroke-width="1.6">
+                <circle cx="9" cy="9" r="7"/><path d="M9 6v3l2 2"/>
+              </svg>
+            </div>
+            <div class="feat-name">24/7 Support</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MECHANIC FORM ── -->
+      <div id="mechForm" style="display:none">
+        <div class="form-eyebrow">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 14l2-2 8-8 2 2-8 8-2-2z"/><path d="M12 2l2 2-1 1-2-2 1-1z"/>
+          </svg>
+          Technician Portal
+        </div>
+        <h2 class="form-title">Mechanic Sign In</h2>
+        <p class="form-subtitle">Access your dispatch dashboard & manage jobs</p>
+
+        <div class="status-bar">
+          <span class="status-bar-label">Dispatch system</span>
+          <span class="status-online">
+            <span class="online-dot"></span>
+            Online — accepting jobs
+          </span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Technician ID or Email</label>
+          <div class="field-wrap">
+            <svg class="field-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="1" y="3" width="14" height="10" rx="2"/><path d="M4 7h4M4 10h6"/>
+            </svg>
+            <input class="field-input" type="text" placeholder="MECH-0042 or email" autocomplete="username" />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <div class="field-wrap">
+            <svg class="field-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="3" y="7" width="10" height="8" rx="1.5"/>
+              <path d="M5 7V5a3 3 0 016 0v2"/>
+            </svg>
+            <input class="field-input" type="password" id="mechPass" placeholder="Enter your password" autocomplete="current-password" />
+            <button class="eye-btn" type="button" onclick="togglePass('mechPass', this)" aria-label="Toggle password">
+              <svg id="eyeMech" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/>
+                <circle cx="8" cy="8" r="2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Service Zone</label>
+          <div class="field-wrap">
+            <svg class="field-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M8 14s-6-4-6-8a6 6 0 0112 0c0 4-6 8-6 8z"/><circle cx="8" cy="6" r="2"/>
+            </svg>
+            <select class="field-input" style="appearance:none; cursor:pointer; padding-right: 12px;">
+              <option value="" disabled selected>Select your zone</option>
+              <option>North Zone — Delhi NCR</option>
+              <option>South Zone — Bengaluru</option>
+              <option>West Zone — Mumbai</option>
+              <option>East Zone — Kolkata</option>
+              <option>Central — Hyderabad</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <label class="check-label">
+            <input type="checkbox" /> Remember this device
+          </label>
+          <button class="link-btn">Forgot password?</button>
+        </div>
+
+        <button class="cta-btn mech-cta">Sign In as Mechanic →</button>
+
+        <div class="or-row">
+          <div class="or-line"></div>
+          <span class="or-text">or</span>
+          <div class="or-line"></div>
+        </div>
+
+        <button class="sec-btn apply-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+            <circle cx="8" cy="8" r="7"/><path d="M8 5v6M5 8h6" stroke-linecap="round"/>
+          </svg>
+          Apply for Technician ID
+        </button>
+
+        <p class="form-footer">Not registered? <a href="#">Join our mechanic network</a></p>
+
+        <div class="feature-row">
+          <div class="feat">
+            <div class="feat-icon" style="background:rgba(245,100,20,0.1)">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#F56414" stroke-width="1.6">
+                <rect x="2" y="4" width="14" height="10" rx="2"/><path d="M5 8h8M5 11h5"/>
+              </svg>
+            </div>
+            <div class="feat-name">Job Dispatch</div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon" style="background:rgba(34,197,94,0.1)">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#22C55E" stroke-width="1.6">
+                <path d="M9 2v9M9 11l3-3M9 11l-3-3"/><path d="M3 14h12"/>
+              </svg>
+            </div>
+            <div class="feat-name">Earnings</div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon" style="background:rgba(245,166,35,0.1)">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#F5A623" stroke-width="1.6">
+                <circle cx="9" cy="9" r="7"/><path d="M9 6v3l2 2"/>
+              </svg>
+            </div>
+            <div class="feat-name">Shift Planner</div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon" style="background:rgba(59,130,246,0.1)">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#3B82F6" stroke-width="1.6">
+                <path d="M9 2l1.5 4.5H15l-3.75 2.75 1.5 4.5L9 11 5.25 13.75l1.5-4.5L3 6.5h4.5z"/>
+              </svg>
+            </div>
+            <div class="feat-name">Ratings</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function switchRole(role) {
+    const heroPanel   = document.getElementById('heroPanel');
+    const formPanel   = document.getElementById('formPanel');
+    const heroUser    = document.getElementById('heroUser');
+    const heroMech    = document.getElementById('heroMech');
+    const userForm    = document.getElementById('userForm');
+    const mechForm    = document.getElementById('mechForm');
+    const btnUser     = document.getElementById('btnUser');
+    const btnMech     = document.getElementById('btnMech');
+    const trustText   = document.getElementById('trustText');
+
+    if (role === 'user') {
+      // Hero panel
+      heroPanel.classList.remove('mech-theme');
+      heroPanel.classList.add('user-theme');
+      heroUser.style.display = 'block';
+      heroMech.style.display = 'none';
+
+      // Form panel
+      formPanel.classList.remove('mech-form');
+      formPanel.classList.add('user-form');
+      userForm.style.display = 'block';
+      mechForm.style.display = 'none';
+
+      // Buttons
+      btnUser.classList.add('active-user');
+      btnUser.classList.remove('active-mech');
+      btnMech.className = 'toggle-btn';
+
+      trustText.innerHTML = 'Trusted by <b>340,000+</b> drivers across India';
+    } else {
+      // Hero panel
+      heroPanel.classList.remove('user-theme');
+      heroPanel.classList.add('mech-theme');
+      heroMech.style.display = 'block';
+      heroUser.style.display = 'none';
+
+      // Form panel
+      formPanel.classList.remove('user-form');
+      formPanel.classList.add('mech-form');
+      mechForm.style.display = 'block';
+      userForm.style.display = 'none';
+
+      // Buttons
+      btnMech.classList.add('active-mech');
+      btnMech.classList.remove('active-user');
+      btnUser.className = 'toggle-btn';
+
+      trustText.innerHTML = 'Joined by <b>4,200+</b> certified mechanics across India';
+    }
+  }
+
+  function togglePass(id, btn) {
+    const input = document.getElementById(id);
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    btn.querySelector('svg').style.opacity = isHidden ? '0.4' : '1';
+  }
+</script>
+
+</body>
+</html>

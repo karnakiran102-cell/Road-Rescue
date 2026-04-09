@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RoadRescue — Emergency Breakdown Assistance</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #E8281A;
+    --red-dark: #B01E12;
+    --red-glow: rgba(232,40,26,0.25);
+    --orange: #FF6B1A;
+    --yellow: #FFC600;
+    --charcoal: #0D0D0F;
+    --charcoal2: #161618;
+    --charcoal3: #1E1E22;
+    --charcoal4: #2A2A30;
+    --silver: #A8A8B0;
+    --light: #E8E8EC;
+    --white: #F6F6F8;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--charcoal);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 6vw;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 60% at 70% 50%, rgba(232,40,26,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 80% at 10% 30%, rgba(255,198,0,0.04) 0%, transparent 55%),
+      linear-gradient(180deg, #0D0D0F 0%, #0F0F12 100%);
+  }
+
+  /* Road stripe animation */
+  .road {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    background: #111113;
+    border-top: 2px solid #222226;
+    overflow: hidden;
+  }
+
+  .road-lines {
+    position: absolute;
+    top: 50%;
+    left: -100%;
+    width: 300%;
+    height: 4px;
+    background: repeating-linear-gradient(90deg, transparent 0, transparent 60px, var(--yellow) 60px, var(--yellow) 120px);
+    transform: translateY(-50%);
+    animation: roadScroll 2s linear infinite;
+    opacity: 0.6;
+  }
+
+  @keyframes roadScroll {
+    from { transform: translateX(0) translateY(-50%); }
+    to { transform: translateX(120px) translateY(-50%); }
+  }
+
+  /* Warning lights */
+  .warning-light {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--yellow);
+    box-shadow: 0 0 20px var(--yellow), 0 0 40px rgba(255,198,0,0.5);
+    animation: blink 1.2s ease-in-out infinite;
+  }
+
+  .warning-light:nth-child(1) { top: 18px; left: 80px; }
+  .warning-light:nth-child(2) { top: 18px; right: 80px; animation-delay: 0.6s; }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.1; }
+  }
+
+  /* Car SVG */
+  .car-container {
+    position: absolute;
+    bottom: 120px;
+    right: 6vw;
+    width: 380px;
+    animation: carFloat 4s ease-in-out infinite;
+  }
+
+  @keyframes carFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .smoke {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(180,180,190,0.15);
+    top: 20px;
+    left: 100px;
+    animation: smokeRise 3s ease-out infinite;
+  }
+
+  .smoke:nth-child(2) { animation-delay: 1s; left: 115px; }
+  .smoke:nth-child(3) { animation-delay: 2s; left: 95px; }
+
+  @keyframes smokeRise {
+    0% { transform: translate(0,0) scale(1); opacity: 0.5; }
+    100% { transform: translate(-30px,-80px) scale(3); opacity: 0; }
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 640px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(232,40,26,0.12);
+    border: 1px solid rgba(232,40,26,0.35);
+    border-radius: 100px;
+    padding: 6px 16px 6px 10px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.08em;
+    color: #FF6B6B;
+    margin-bottom: 32px;
+    animation: fadeInDown 0.6s ease both;
+  }
+
+  .badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 8px var(--red);
+    animation: blink 1s ease-in-out infinite;
+  }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(64px, 10vw, 130px);
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    color: var(--white);
+    animation: fadeInDown 0.6s ease 0.1s both;
+  }
+
+  .hero-title .accent {
+    color: var(--red);
+    display: block;
+  }
+
+  .hero-sub {
+    margin-top: 24px;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--silver);
+    max-width: 460px;
+    font-weight: 300;
+    animation: fadeInDown 0.6s ease 0.2s both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+    animation: fadeInDown 0.6s ease 0.3s both;
+  }
+
+  .btn-primary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--red);
+    color: white;
+    padding: 16px 32px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 0 40px rgba(232,40,26,0.3);
+  }
+
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 50px rgba(232,40,26,0.5);
+  }
+
+  .btn-secondary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    color: var(--light);
+    padding: 16px 32px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid rgba(255,255,255,0.15);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .btn-secondary:hover {
+    border-color: rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.05);
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    position: absolute;
+    bottom: 140px;
+    left: 6vw;
+    display: flex;
+    gap: 48px;
+    z-index: 2;
+    animation: fadeInDown 0.6s ease 0.5s both;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 38px;
+    line-height: 1;
+    color: var(--white);
+  }
+
+  .stat-num span {
+    color: var(--red);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--silver);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* ── SOS BUTTON ── */
+  .sos-section {
+    position: relative;
+    z-index: 2;
+    padding: 100px 6vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 48px;
+    background: var(--charcoal2);
+    overflow: hidden;
+  }
+
+  .sos-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(232,40,26,0.06) 0%, transparent 70%);
+  }
+
+  .sos-ring {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    cursor: pointer;
+  }
+
+  .sos-ring::before,
+  .sos-ring::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(232,40,26,0.3);
+    animation: ringPulse 2.5s ease-out infinite;
+  }
+
+  .sos-ring::before {
+    inset: -30px;
+    animation-delay: 0s;
+  }
+
+  .sos-ring::after {
+    inset: -60px;
+    animation-delay: 0.8s;
+  }
+
+  @keyframes ringPulse {
+    0% { transform: scale(0.9); opacity: 0.8; }
+    100% { transform: scale(1.1); opacity: 0; }
+  }
+
+  .sos-btn {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #FF3A28, #B01E12);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+    transition: transform 0.15s;
+    box-shadow: 0 0 60px rgba(232,40,26,0.4), inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -4px 0 rgba(0,0,0,0.3);
+  }
+
+  .sos-btn:hover { transform: scale(1.05); }
+  .sos-btn:active { transform: scale(0.97); }
+
+  .sos-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    letter-spacing: 4px;
+    color: white;
+    line-height: 1;
+  }
+
+  .sos-sub {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .sos-label {
+    font-size: 14px;
+    color: var(--silver);
+    text-align: center;
+    max-width: 280px;
+    line-height: 1.6;
+  }
+
+  /* ── SERVICES GRID ── */
+  .services {
+    padding: 100px 6vw;
+    background: var(--charcoal);
+  }
+
+  .section-header {
+    margin-bottom: 60px;
+  }
+
+  .section-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(40px, 6vw, 72px);
+    letter-spacing: 0.02em;
+    line-height: 0.95;
+    color: var(--white);
+  }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2px;
+  }
+
+  .service-card {
+    background: var(--charcoal2);
+    padding: 40px 36px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: background 0.3s;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .service-card::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--red);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  .service-card:hover { background: var(--charcoal3); }
+  .service-card:hover::before { transform: scaleX(1); }
+
+  .service-icon {
+    width: 52px;
+    height: 52px;
+    background: rgba(232,40,26,0.1);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    font-size: 24px;
+    border: 1px solid rgba(232,40,26,0.2);
+    transition: background 0.3s;
+  }
+
+  .service-card:hover .service-icon {
+    background: rgba(232,40,26,0.2);
+  }
+
+  .service-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 0.04em;
+    color: var(--white);
+    margin-bottom: 12px;
+  }
+
+  .service-desc {
+    font-size: 14px;
+    color: var(--silver);
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  .service-eta {
+    margin-top: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--yellow);
+    background: rgba(255,198,0,0.08);
+    padding: 4px 12px;
+    border-radius: 4px;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .how-it-works {
+    padding: 100px 6vw;
+    background: var(--charcoal2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .steps-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0;
+    margin-top: 60px;
+    position: relative;
+  }
+
+  .steps-container::before {
+    content: '';
+    position: absolute;
+    top: 36px;
+    left: 15%;
+    right: 15%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(232,40,26,0.4), transparent);
+  }
+
+  .step {
+    padding: 0 32px;
+    text-align: center;
+    animation: fadeInUp 0.5s ease both;
+  }
+
+  .step:nth-child(1) { animation-delay: 0.1s; }
+  .step:nth-child(2) { animation-delay: 0.2s; }
+  .step:nth-child(3) { animation-delay: 0.3s; }
+  .step:nth-child(4) { animation-delay: 0.4s; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-num {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 1px solid rgba(232,40,26,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 28px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--red);
+    background: rgba(232,40,26,0.06);
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.04em;
+    color: var(--white);
+    margin-bottom: 12px;
+  }
+
+  .step-desc {
+    font-size: 13px;
+    color: var(--silver);
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  /* ── TRACKER ── */
+  .tracker {
+    padding: 100px 6vw;
+    background: var(--charcoal);
+  }
+
+  .tracker-panel {
+    background: var(--charcoal2);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 700px;
+    margin: 60px auto 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tracker-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--red), var(--orange), var(--yellow));
+  }
+
+  .tracker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 36px;
+  }
+
+  .tracker-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.04em;
+  }
+
+  .tracker-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--silver);
+    background: var(--charcoal3);
+    padding: 6px 14px;
+    border-radius: 4px;
+  }
+
+  .progress-steps {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    margin-bottom: 40px;
+  }
+
+  .prog-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+  }
+
+  .prog-step::after {
+    content: '';
+    position: absolute;
+    top: 16px;
+    left: 55%;
+    right: -45%;
+    height: 2px;
+    background: rgba(255,255,255,0.1);
+  }
+
+  .prog-step:last-child::after { display: none; }
+
+  .prog-step.done::after {
+    background: var(--red);
+  }
+
+  .prog-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--silver);
+    background: var(--charcoal);
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+  }
+
+  .prog-step.done .prog-circle {
+    border-color: var(--red);
+    background: var(--red);
+    color: white;
+  }
+
+  .prog-step.active .prog-circle {
+    border-color: var(--orange);
+    color: var(--orange);
+    animation: activePulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes activePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,26,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(255,107,26,0); }
+  }
+
+  .prog-label {
+    font-size: 11px;
+    color: var(--silver);
+    text-align: center;
+    letter-spacing: 0.04em;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .prog-step.done .prog-label { color: var(--light); }
+  .prog-step.active .prog-label { color: var(--orange); }
+
+  .tech-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .tech-row {
+    background: var(--charcoal3);
+    border-radius: 8px;
+    padding: 16px 20px;
+  }
+
+  .tech-row-label {
+    font-size: 11px;
+    color: var(--silver);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .tech-row-val {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--white);
+  }
+
+  .eta-countdown {
+    color: var(--orange);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── CONTACT ── */
+  .contact-strip {
+    padding: 80px 6vw;
+    background: var(--red);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+
+  .contact-strip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%);
+  }
+
+  .contact-text {
+    position: relative;
+    z-index: 1;
+  }
+
+  .contact-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(36px, 5vw, 60px);
+    letter-spacing: 0.02em;
+    line-height: 0.95;
+    color: white;
+    margin-bottom: 8px;
+  }
+
+  .contact-sub {
+    font-size: 15px;
+    color: rgba(255,255,255,0.75);
+    font-weight: 300;
+  }
+
+  .phone-btn {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: white;
+    color: var(--red-dark);
+    padding: 20px 36px;
+    border-radius: 6px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+
+  .phone-btn:hover { transform: scale(1.03); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--charcoal2);
+    padding: 60px 6vw 40px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .footer-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+  }
+
+  .footer-brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 0.06em;
+    color: var(--white);
+  }
+
+  .footer-brand span { color: var(--red); }
+
+  .footer-tagline {
+    font-size: 13px;
+    color: var(--silver);
+    margin-top: 8px;
+    max-width: 240px;
+    line-height: 1.5;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 60px;
+    flex-wrap: wrap;
+  }
+
+  .footer-col h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--silver);
+    margin-bottom: 16px;
+  }
+
+  .footer-col a {
+    display: block;
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    margin-bottom: 10px;
+    transition: color 0.2s;
+  }
+
+  .footer-col a:hover { color: var(--white); }
+
+  .footer-bottom {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .footer-copy {
+    font-size: 13px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  .footer-legal {
+    display: flex;
+    gap: 24px;
+  }
+
+  .footer-legal a {
+    font-size: 13px;
+    color: rgba(255,255,255,0.3);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-legal a:hover { color: var(--silver); }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 20px 6vw;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(13,13,15,0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 0.08em;
+    color: var(--white);
+    text-decoration: none;
+  }
+
+  .nav-logo span { color: var(--red); }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 36px;
+  }
+
+  .nav-links a {
+    font-size: 13px;
+    color: var(--silver);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--white); }
+
+  .nav-cta {
+    background: var(--red);
+    color: white;
+    padding: 10px 24px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .nav-cta:hover { background: var(--red-dark); color: white; }
+
+  /* ── TICKER ── */
+  .ticker {
+    background: var(--red);
+    padding: 10px 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .ticker-inner {
+    display: inline-flex;
+    animation: tickerScroll 20s linear infinite;
+    gap: 0;
+  }
+
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 40px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.8);
+  }
+
+  .ticker-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    flex-shrink: 0;
+  }
+
+  @keyframes tickerScroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* scrolled nav */
+  .scrolled { box-shadow: 0 4px 40px rgba(0,0,0,0.4); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="main-nav">
+  <a href="#" class="nav-logo">ROAD<span>RESCUE</span></a>
+  <div class="nav-links">
+    <a href="#services">Services</a>
+    <a href="#how">How It Works</a>
+    <a href="#track">Track</a>
+    <a href="#contact">Contact</a>
+    <a href="#contact" class="nav-cta">Emergency Help</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+
+  <div class="hero-content">
+    <div class="badge">
+      <div class="badge-dot"></div>
+      LIVE DISPATCH — 24/7 COVERAGE ACTIVE
+    </div>
+    <h1 class="hero-title">
+      STUCK ON<br>
+      THE <span class="accent">ROAD?</span>
+    </h1>
+    <p class="hero-sub">Professional breakdown assistance, anywhere, anytime. Our certified mechanics reach you in under 30 minutes — guaranteed.</p>
+    <div class="hero-actions">
+      <a href="#sos" class="btn-primary">
+        <span>🚨</span>
+        GET HELP NOW
+      </a>
+      <a href="#track" class="btn-secondary">
+        <span>📍</span>
+        TRACK MY TECHNICIAN
+      </a>
+    </div>
+  </div>
+
+  <!-- Car SVG -->
+  <div class="car-container">
+    <div class="smoke"></div>
+    <div class="smoke"></div>
+    <div class="smoke"></div>
+    <svg viewBox="0 0 380 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- car body shadow -->
+      <ellipse cx="190" cy="188" rx="160" ry="12" fill="rgba(0,0,0,0.3)"/>
+      <!-- car body -->
+      <rect x="30" y="110" width="320" height="65" rx="10" fill="#1E1E26"/>
+      <!-- car roof/cabin -->
+      <path d="M90 110 L130 60 L250 60 L290 110Z" fill="#252530"/>
+      <!-- windshield -->
+      <path d="M145 65 L135 105 L245 105 L235 65Z" fill="rgba(100,160,220,0.2)" stroke="rgba(100,160,220,0.15)" stroke-width="1"/>
+      <!-- side windows -->
+      <rect x="135" y="68" width="45" height="35" rx="3" fill="rgba(100,160,220,0.15)" stroke="rgba(100,160,220,0.1)" stroke-width="1"/>
+      <rect x="195" y="68" width="45" height="35" rx="3" fill="rgba(100,160,220,0.15)" stroke="rgba(100,160,220,0.1)" stroke-width="1"/>
+      <!-- door lines -->
+      <line x1="180" y1="112" x2="180" y2="168" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+      <line x1="240" y1="112" x2="240" y2="168" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+      <!-- bonnet stripe -->
+      <rect x="30" y="140" width="320" height="3" fill="rgba(232,40,26,0.4)"/>
+      <!-- headlights -->
+      <rect x="32" y="118" width="30" height="14" rx="3" fill="#FFC600" opacity="0.9"/>
+      <rect x="32" y="118" width="30" height="14" rx="3" fill="url(#hl)" opacity="0.5"/>
+      <!-- tail lights -->
+      <rect x="318" y="118" width="30" height="14" rx="3" fill="#E8281A" opacity="0.9"/>
+      <!-- wheels -->
+      <circle cx="100" cy="174" r="24" fill="#111116" stroke="#333340" stroke-width="2"/>
+      <circle cx="100" cy="174" r="14" fill="#1A1A22" stroke="#444450" stroke-width="1.5"/>
+      <circle cx="100" cy="174" r="5" fill="#E8281A"/>
+      <circle cx="280" cy="174" r="24" fill="#111116" stroke="#333340" stroke-width="2"/>
+      <circle cx="280" cy="174" r="14" fill="#1A1A22" stroke="#444450" stroke-width="1.5"/>
+      <circle cx="280" cy="174" r="5" fill="#E8281A"/>
+      <!-- warning triangle on roof -->
+      <polygon points="188,20 198,38 178,38" fill="#FFC600" opacity="0.9"/>
+      <polygon points="188,24 195,37 181,37" fill="#1E1E26"/>
+      <text x="188" y="35" text-anchor="middle" font-size="8" fill="#FFC600" font-weight="bold">!</text>
+      <!-- hazard lights blinking overlay -->
+      <rect x="32" y="155" width="10" height="8" rx="2" fill="#FFC600" opacity="0.6" class="hazard-l"/>
+      <rect x="338" y="155" width="10" height="8" rx="2" fill="#FFC600" opacity="0.6" class="hazard-r"/>
+      <defs>
+        <linearGradient id="hl" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="white" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="white" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-num">28<span>min</span></div>
+      <div class="stat-label">Avg. Response Time</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">98<span>%</span></div>
+      <div class="stat-label">Success Rate</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">24<span>/7</span></div>
+      <div class="stat-label">Always Available</div>
+    </div>
+  </div>
+
+  <!-- Road -->
+  <div class="road">
+    <div class="warning-light"></div>
+    <div class="warning-light"></div>
+    <div class="road-lines"></div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-inner" id="ticker-inner">
+    <span class="ticker-item"><span class="ticker-dot"></span>TYRE CHANGE</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>BATTERY JUMP START</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>FUEL DELIVERY</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>EMERGENCY TOWING</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>LOCKOUT SERVICE</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>ENGINE DIAGNOSTICS</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>ROADSIDE REPAIRS</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>TYRE CHANGE</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>BATTERY JUMP START</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>FUEL DELIVERY</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>EMERGENCY TOWING</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>LOCKOUT SERVICE</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>ENGINE DIAGNOSTICS</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>ROADSIDE REPAIRS</span>
+  </div>
+</div>
+
+<!-- SOS SECTION -->
+<section class="sos-section" id="sos">
+  <div style="text-align:center; position:relative; z-index:2;">
+    <div class="section-tag" style="justify-content:center; display:flex;">EMERGENCY</div>
+    <div class="section-title" style="text-align:center; margin-top:8px;">ONE PRESS.<br>HELP IS COMING.</div>
+  </div>
+  <div class="sos-ring" id="sos-ring" onclick="triggerSOS()">
+    <button class="sos-btn" id="sos-btn">
+      <span class="sos-text">SOS</span>
+      <span class="sos-sub">TAP TO ACTIVATE</span>
+    </button>
+  </div>
+  <p class="sos-label" style="position:relative;z-index:2;" id="sos-msg">Press the button to instantly dispatch a technician to your GPS location</p>
+</section>
+
+<!-- SERVICES -->
+<section class="services" id="services">
+  <div class="section-header">
+    <div class="section-tag">WHAT WE DO</div>
+    <div class="section-title">EVERY SITUATION.<br>COVERED.</div>
+  </div>
+  <div class="services-grid">
+    <div class="service-card">
+      <div class="service-icon">🔋</div>
+      <div class="service-name">BATTERY RESCUE</div>
+      <div class="service-desc">Dead battery? We jump-start, diagnose, and replace on the spot. Premium batteries from leading manufacturers, fitted in minutes.</div>
+      <div class="service-eta">⚡ ETA 15–25 min</div>
+    </div>
+    <div class="service-card">
+      <div class="service-icon">🔧</div>
+      <div class="service-name">TYRE CHANGE</div>
+      <div class="service-desc">Flat or blowout — we'll swap your spare or bring a replacement. Emergency run-flats available for compatible vehicles.</div>
+      <div class="service-eta">⚡ ETA 20–30 min</div>
+    </div>
+    <div class="service-card">
+      <div class="service-icon">⛽</div>
+      <div class="service-name">FUEL DELIVERY</div>
+      <div class="service-desc">Ran out of fuel? We deliver petrol, diesel, or AdBlue directly to you — no embarrassing walk to the nearest station.</div>
+      <div class="service-eta">⚡ ETA 20–35 min</div>
+    </div>
+    <div class="service-card">
+      <div class="service-icon">🚛</div>
+      <div class="service-name">EMERGENCY TOWING</div>
+      <div class="service-desc">When repairs can't happen roadside, our flatbed fleet transports your vehicle safely to the nearest garage or your home.</div>
+      <div class="service-eta">⚡ ETA 25–45 min</div>
+    </div>
+    <div class="service-card">
+      <div class="service-icon">🔑</div>
+      <div class="service-name">LOCKOUT SERVICE</div>
+      <div class="service-desc">Locked keys inside? Our certified locksmiths open any vehicle without damage — for all makes and models including keyless entry.</div>
+      <div class="service-eta">⚡ ETA 15–30 min</div>
+    </div>
+    <div class="service-card">
+      <div class="service-icon">🩺</div>
+      <div class="service-name">ENGINE DIAGNOSTICS</div>
+      <div class="service-desc">Warning lights on? OBD-II scanners on every vehicle. We identify faults in real time and advise on next steps immediately.</div>
+      <div class="service-eta">⚡ ETA 20–30 min</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-it-works" id="how">
+  <div class="section-header">
+    <div class="section-tag">PROCESS</div>
+    <div class="section-title">HELP IN<br>4 SIMPLE STEPS</div>
+  </div>
+  <div class="steps-container">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-title">CALL OR TAP SOS</div>
+      <div class="step-desc">Reach us via the emergency button, app, or phone. Your GPS is shared automatically — no address needed.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-title">DISPATCH IN 60s</div>
+      <div class="step-desc">We match you with the nearest available technician and dispatch instantly. You'll get their name, photo, and live ETA.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-title">LIVE TRACKING</div>
+      <div class="step-desc">Watch your technician en route on the real-time map. Direct communication line available throughout.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-title">BACK ON THE ROAD</div>
+      <div class="step-desc">Most jobs resolved roadside in under an hour. Digital job report and receipt sent instantly to your email.</div>
+    </div>
+  </div>
+</section>
+
+<!-- TRACKER PANEL -->
+<section class="tracker" id="track">
+  <div class="section-header">
+    <div class="section-tag">REAL-TIME</div>
+    <div class="section-title">TECHNICIAN<br>TRACKER</div>
+  </div>
+  <div class="tracker-panel">
+    <div class="tracker-header">
+      <div class="tracker-title">JOB DISPATCH STATUS</div>
+      <div class="tracker-id" id="job-id">JOB #RR-00000</div>
+    </div>
+    <div class="progress-steps">
+      <div class="prog-step done" id="ps1">
+        <div class="prog-circle">✓</div>
+        <div class="prog-label">Request<br>Received</div>
+      </div>
+      <div class="prog-step done" id="ps2">
+        <div class="prog-circle">✓</div>
+        <div class="prog-label">Tech<br>Assigned</div>
+      </div>
+      <div class="prog-step active" id="ps3">
+        <div class="prog-circle">→</div>
+        <div class="prog-label">En<br>Route</div>
+      </div>
+      <div class="prog-step" id="ps4">
+        <div class="prog-circle">4</div>
+        <div class="prog-label">On<br>Site</div>
+      </div>
+      <div class="prog-step" id="ps5">
+        <div class="prog-circle">5</div>
+        <div class="prog-label">Job<br>Complete</div>
+      </div>
+    </div>
+    <div class="tech-info">
+      <div class="tech-row">
+        <div class="tech-row-label">TECHNICIAN</div>
+        <div class="tech-row-val">James Okafor · ⭐ 4.9</div>
+      </div>
+      <div class="tech-row">
+        <div class="tech-row-label">ETA</div>
+        <div class="eta-countdown" id="eta-display">18:42</div>
+      </div>
+      <div class="tech-row">
+        <div class="tech-row-label">SERVICE TYPE</div>
+        <div class="tech-row-val">Battery Rescue</div>
+      </div>
+      <div class="tech-row">
+        <div class="tech-row-label">DISTANCE</div>
+        <div class="tech-row-val" id="dist-display">6.2 km away</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT STRIP -->
+<section class="contact-strip" id="contact">
+  <div class="contact-text">
+    <div class="contact-title">BROKEN DOWN?<br>CALL US NOW.</div>
+    <div class="contact-sub">Operators standing by 24 hours a day, 365 days a year</div>
+  </div>
+  <a href="tel:08001234567" class="phone-btn">
+    📞 0800 123 4567
+  </a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div>
+      <div class="footer-brand">ROAD<span>RESCUE</span></div>
+      <p class="footer-tagline">Britain's most trusted roadside assistance, built for the modern driver.</p>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <h4>Services</h4>
+        <a href="#">Battery Rescue</a>
+        <a href="#">Tyre Change</a>
+        <a href="#">Towing</a>
+        <a href="#">Fuel Delivery</a>
+        <a href="#">Lockout</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="#">About Us</a>
+        <a href="#">Careers</a>
+        <a href="#">Coverage Map</a>
+        <a href="#">Press</a>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <a href="#">FAQs</a>
+        <a href="#">Track Your Job</a>
+        <a href="#">Insurance Claims</a>
+        <a href="#">Feedback</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2026 RoadRescue Ltd. All rights reserved.</div>
+    <div class="footer-legal">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+      <a href="#">Cookie Settings</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Nav scroll effect
+  const nav = document.getElementById('main-nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // Generate job ID
+  document.getElementById('job-id').textContent = 'JOB #RR-' + Math.floor(10000 + Math.random() * 90000);
+
+  // ETA countdown
+  let etaSeconds = 18 * 60 + 42;
+  function updateETA() {
+    if (etaSeconds <= 0) return;
+    etaSeconds--;
+    const m = Math.floor(etaSeconds / 60).toString().padStart(2, '0');
+    const s = (etaSeconds % 60).toString().padStart(2, '0');
+    document.getElementById('eta-display').textContent = m + ':' + s;
+  }
+  setInterval(updateETA, 1000);
+
+  // Distance decreasing
+  let dist = 6.2;
+  setInterval(() => {
+    dist = Math.max(0.1, dist - 0.03);
+    document.getElementById('dist-display').textContent = dist.toFixed(1) + ' km away';
+  }, 3000);
+
+  // SOS button
+  let sosActive = false;
+  function triggerSOS() {
+    if (sosActive) return;
+    sosActive = true;
+    const btn = document.getElementById('sos-btn');
+    const msg = document.getElementById('sos-msg');
+    btn.style.background = 'radial-gradient(circle at 35% 30%, #FF6B1A, #CC4400)';
+    btn.querySelector('.sos-sub').textContent = 'CONNECTING...';
+    msg.textContent = 'Locating your GPS position...';
+    setTimeout(() => {
+      btn.style.background = 'radial-gradient(circle at 35% 30%, #22C55E, #16A34A)';
+      btn.querySelector('.sos-text').textContent = 'SENT';
+      btn.querySelector('.sos-sub').textContent = 'DISPATCHING NOW';
+      msg.textContent = '✓ Technician dispatched! James is on his way — ETA 18 minutes.';
+    }, 2000);
+  }
+
+  // Hazard blink
+  const hl = document.querySelector('.hazard-l');
+  const hr = document.querySelector('.hazard-r');
+  if (hl && hr) {
+    setInterval(() => {
+      const op = parseFloat(hl.getAttribute('opacity') || 0.6) > 0.3 ? '0.05' : '0.6';
+      hl.setAttribute('opacity', op);
+      hr.setAttribute('opacity', op);
+    }, 700);
+  }
+
+  // Intersection observer for step animations
+  const steps = document.querySelectorAll('.step, .service-card');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.animationPlayState = 'running';
+      }
+    });
+  }, { threshold: 0.1 });
+  steps.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
